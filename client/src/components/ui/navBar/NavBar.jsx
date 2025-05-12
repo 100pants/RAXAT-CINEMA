@@ -23,13 +23,14 @@ import { MOVIE_LISTS, TOP_LISTS, iconComponents } from '../../../constants';
 import Search from '../search/Search';
 import { ColorModeContext } from '../../../context/ToggleColorMode';
 import { Brightness7, Brightness4 } from '@mui/icons-material';
+import { useSelector, useDispatch } from 'react-redux';
+import { logout } from '../../../features/authSlice';
 
 const Icon = ({ iconName }) => {
   const IconComponent = iconComponents[iconName];
   return IconComponent ? <IconComponent /> : null;
 };
 
-// Компонент, отвечающий за плавное появление/исчезновение
 function HideOnScroll({ children }) {
   const trigger = useScrollTrigger();
   return (
@@ -43,16 +44,16 @@ const NavBar = () => {
   const [isOpen, setOpen] = React.useState(false);
   const { mode, toggleColorMode } = React.useContext(ColorModeContext);
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  const dispatch = useDispatch();
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
   const handleOpen = () => {
     setOpen(prev => !prev);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    dispatch(logout());
     navigate('/');
-    window.location.reload();
   };
 
   return (
@@ -90,7 +91,7 @@ const NavBar = () => {
                 </IconButton>
               </Box>
 
-              {token ? (
+              {isAuthenticated ? (
                 <Button color="inherit" onClick={handleLogout}>
                   Выйти
                 </Button>
@@ -104,7 +105,7 @@ const NavBar = () => {
         </AppBar>
       </HideOnScroll>
 
-      <Toolbar /> {/* нужно, чтобы контент не прятался под AppBar */}
+      <Toolbar />
 
       <Drawer
         anchor="left"

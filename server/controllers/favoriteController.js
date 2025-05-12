@@ -1,19 +1,16 @@
 import { Favorite, User } from '../models/models.js';
 
 class FavoriteController {
-    // Добавить фильм в избранное
     async add(req, res) {
         try {
             const { kinopoiskId } = req.body;
-            const userId = req.user.id; // Из токена (authMiddleware)
+            const userId = req.user.id; 
 
-            // Проверяем, не добавлен ли уже фильм
             const existing = await Favorite.findOne({ where: { userId, kinopoiskId } });
             if (existing) {
                 return res.status(400).json({ message: 'Фильм уже в избранном' });
             }
 
-            // Создаём запись
             const favorite = await Favorite.create({ userId, kinopoiskId });
             return res.json(favorite);
         } catch (e) {
@@ -22,7 +19,6 @@ class FavoriteController {
         }
     }
 
-    // Удалить фильм из избранного
     async remove(req, res) {
         try {
             const { kinopoiskId } = req.body;
@@ -36,7 +32,6 @@ class FavoriteController {
         }
     }
 
-    // Получить все избранные фильмы пользователя
     async getAll(req, res) {
         try {
             const userId = req.user.id;

@@ -1,16 +1,12 @@
-module.exports = {
+export default {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('likes', {
+    await queryInterface.createTable('tokens', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
         autoIncrement: true,
       },
-      movieId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-      },
-      userId: {
+      user_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
@@ -19,28 +15,26 @@ module.exports = {
         },
         onDelete: 'CASCADE',
       },
-      isLike: {
-        type: Sequelize.BOOLEAN,
+      refresh_token: {
+        type: Sequelize.STRING,
         allowNull: false,
       },
-      createdAt: {
+      created_at: {
         type: Sequelize.DATE,
         allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
-      updatedAt: {
+      updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
     });
 
-    await queryInterface.addIndex('likes', ['movieId']);
-    await queryInterface.addIndex('likes', ['userId']);
-    await queryInterface.addIndex('likes', ['movieId', 'userId'], {
-      unique: true,
-    });
+    await queryInterface.addIndex('tokens', ['user_id']);
   },
 
   down: async (queryInterface) => {
-    await queryInterface.dropTable('likes');
+    await queryInterface.dropTable('tokens');
   },
 };

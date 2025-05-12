@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import currentQueryReducer from '../features/currentQuerySlice';
 import searchQueryReducer from '../features/searchQuerySlice';
+import authReducer from '../features/authSlice'; 
 import { kinopoiskApi } from '../services/kinopoiskApi';
 import { likesApi } from '../services/likesApi';
 
@@ -10,6 +11,7 @@ export const store = configureStore({
     [likesApi.reducerPath]: likesApi.reducer,
     currentQuery: currentQueryReducer,
     searchQuery: searchQueryReducer,
+    auth: authReducer, 
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()

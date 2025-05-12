@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Typography, TextField, Button, Box } from '@mui/material';
-import { Controller, useForm } from "react-hook-form";
+import { Typography, TextField, Button, Box, Snackbar } from '@mui/material';
+import { Controller, useForm } from 'react-hook-form';
+import { useDispatch } from 'react-redux';
+import { login } from '../../../../features/authSlice';
 
 const AuthForm = ({ isLogin }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { control, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
       email: '',
@@ -12,14 +15,17 @@ const AuthForm = ({ isLogin }) => {
       login: ''
     }
   });
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   const onSubmit = async (data) => {
     try {
       const endpoint = isLogin ? 'login' : 'registration';
+      const body = isLogin ? { email: data.email, password: data.password } : data;
       const response = await fetch(`http://localhost:5000/api/user/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(body)
       });
 
       const result = await response.json();
@@ -28,13 +34,20 @@ const AuthForm = ({ isLogin }) => {
         throw new Error(result.message || 'Ошибка сервера');
       }
 
-      localStorage.setItem('token', result.token);
+      localStorage.setItem('accessToken', result.accessToken);
+      localStorage.setItem('refreshToken', result.refreshToken);
+      dispatch(login());
       navigate('/');
       window.location.reload();
       
     } catch (error) {
-      alert(error.message);
+      setSnackbarMessage(error.message || 'Ошибка сервера');
+      setSnackbarOpen(true);
     }
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
   };
 
   return (
@@ -105,29 +118,23 @@ const AuthForm = ({ isLogin }) => {
           )}
         />
 
-{isLogin ? (
-  <Typography sx={{ mt: 2 }}>
-    Нет аккаунта?{" "}
-    <NavLink
-      to="/registration"
-      style={{color: '#5fa7b8' }}
-    >
-      Зарегистрируйся!
-    </NavLink>
-  </Typography>
-) : (
-  <Typography variant="body2" sx={{ mt: 2 }}>
-    Уже есть аккаунт?{" "}
-    <Typography component="span">
-      <NavLink
-        to="/login"
-        style={{ color: '#5fa7b8' }}
-      >
-        Войдите!
-      </NavLink>
-    </Typography>
-  </Typography>
-)}
+        {isLogin ? (
+          <Typography sx={{ mt: 2 }}>
+            Нет аккаунта?{" "}
+            <NavLink to="/registration" style={{ color: '#5fa7b8' }}>
+              Зарегистрируйся!
+            </NavLink>
+          </Typography>
+        ) : (
+          <Typography variant="body2" sx={{ mt: 2 }}>
+            Уже есть аккаунт?{" "}
+            <Typography component="span">
+              <NavLink to="/login" style={{ color: '#5fa7b8' }}>
+                Войдите!
+              </NavLink>
+            </Typography>
+          </Typography>
+        )}
         <Button 
           type="submit" 
           variant="contained" 
@@ -138,6 +145,12 @@ const AuthForm = ({ isLogin }) => {
           {isLogin ? 'Войти' : 'Зарегистрироваться'}
         </Button>
       </Box>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        message={snackbarMessage}
+      />
     </Box>
   );
 };
