@@ -3,6 +3,8 @@ import React, { useContext } from 'react';
 import IconButton from '@mui/material/IconButton';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import {
   useGetFilmQuery,
   useGetSequelsAndPrequelsQuery,
@@ -14,6 +16,11 @@ import {
   useSetDislikeMutation,
 } from '../../../services/likesApi';
 import {
+  useGetFavoritesQuery,
+  useAddFavoriteMutation,
+  useRemoveFavoriteMutation,
+} from '../../../services/favoritesApi';
+import {
   Box,
   Button,
   ButtonGroup,
@@ -22,13 +29,14 @@ import {
   Chip,
   Link,
   Snackbar,
+  Tooltip,
 } from '@mui/material';
 import ErrorMessage from '../../ui/errorMessage/ErrorMessage';
 import { ArrowBack, Language, Movie } from '@mui/icons-material';
 import MovieCard from '../../ui/movieCard/MovieCard';
 import './MovieDetail.scss';
 import BearCarousel from 'bear-react-carousel';
-import VideoPlayer from '../../../videoPlayer/VideoPlayer'; 
+import VideoPlayer from '../../../videoPlayer/VideoPlayer';
 import { ColorModeContext } from '../../../context/ToggleColorMode';
 import { useSelector } from 'react-redux';
 
@@ -40,6 +48,11 @@ const MovieDetail = () => {
   const { data: likesData, error: likesError, refetch: refetchLikes } = useGetLikesQuery(id);
   const [setLike, { error: likeError }] = useSetLikeMutation();
   const [setDislike, { error: dislikeError }] = useSetDislikeMutation();
+  const { data: favorites, error: favoritesError } = useGetFavoritesQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+  const [addFavorite, { error: addFavoriteError, isLoading: isAddingFavorite }] = useAddFavoriteMutation();
+  const [removeFavorite, { error: removeFavoriteError, isLoading: isRemovingFavorite }] = useRemoveFavoriteMutation();
 
   const responseFilm = useGetFilmQuery(id);
   const responseSequelsAndPrequels = useGetSequelsAndPrequelsQuery(id);
@@ -48,13 +61,26 @@ const MovieDetail = () => {
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
 
+  const isFavorite = favorites?.some((fav) => fav.kinopoiskId === parseInt(id));
+
   React.useEffect(() => {
-    if (likesError?.status === 401) {
-    } else if (likesError) {
+    if (likesError) {
       setSnackbarMessage('Ошибка загрузки лайков: ' + (likesError.data?.message || 'Серверная ошибка'));
       setSnackbarOpen(true);
     }
-  }, [likesError]);
+    if (favoritesError) {
+      setSnackbarMessage('Ошибка загрузки избранного: ' + (favoritesError.data?.message || 'Серверная ошибка'));
+      setSnackbarOpen(true);
+    }
+    if (likeError || dislikeError || addFavoriteError || removeFavoriteError) {
+      console.error('Ошибка API:', { likeError, dislikeError, addFavoriteError, removeFavoriteError });
+      const error = likeError || dislikeError || addFavoriteError || removeFavoriteError;
+      setSnackbarMessage(
+        `Ошибка ${error.status || 'неизвестна'}: ${error.data?.message || 'Серверная ошибка'}`
+      );
+      setSnackbarOpen(true);
+    }
+  }, [likesError, favoritesError, likeError, dislikeError, addFavoriteError, removeFavoriteError]);
 
   const handleLike = async () => {
     if (!isAuthenticated) {
@@ -65,11 +91,20 @@ const MovieDetail = () => {
       }, 2000);
       return;
     }
+    
     try {
-      await setLike(id).unwrap();
+      if (likesData?.userReaction === true) {
+        await setDislike(id).unwrap();
+        setSnackbarMessage('Лайк удален');
+      } else {
+        await setLike(id).unwrap();
+        setSnackbarMessage(likesData?.userReaction === false ? 'Лайк заменен на дизлайк' : 'Лайк поставлен');
+      }
       refetchLikes();
+      setSnackbarOpen(true);
     } catch (err) {
-      setSnackbarMessage('Не удалось поставить лайк: ' + (err.data?.message || 'Серверная ошибка'));
+      console.error('Ошибка при изменении лайка:', err);
+      setSnackbarMessage(`Ошибка ${err.status || 'неизвестна'}: ${err.data?.message || 'Серверная ошибка'}`);
       setSnackbarOpen(true);
     }
   };
@@ -86,8 +121,38 @@ const MovieDetail = () => {
     try {
       await setDislike(id).unwrap();
       refetchLikes();
+      setSnackbarMessage('Дизлайк поставлен');
+      setSnackbarOpen(true);
     } catch (err) {
-      setSnackbarMessage('Не удалось поставить дизлайк: ' + (err.data?.message || 'Серверная ошибка'));
+      console.error('Ошибка при установке дизлайка:', err);
+      setSnackbarMessage(`Ошибка ${err.status || 'неизвестна'}: ${err.data?.message || 'Серверная ошибка'}`);
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleFavoriteToggle = async () => {
+    if (!isAuthenticated) {
+      setSnackbarMessage('Пожалуйста, зарегистрируйтесь, чтобы добавить в избранное');
+      setSnackbarOpen(true);
+      setTimeout(() => {
+        navigate('/registration');
+      }, 2000);
+      return;
+    }
+    try {
+      if (isFavorite) {
+        await removeFavorite(id).unwrap();
+        setSnackbarMessage('Фильм удален из избранного');
+      } else {
+        await addFavorite(id).unwrap();
+        setSnackbarMessage('Фильм добавлен в избранное');
+      }
+      setSnackbarOpen(true);
+    } catch (err) {
+      console.error('Ошибка при изменении избранного:', err);
+      setSnackbarMessage(
+        `Ошибка ${err.status || 'неизвестна'}: ${err.data?.message || 'Не удалось изменить избранное'}`
+      );
       setSnackbarOpen(true);
     }
   };
@@ -128,19 +193,41 @@ const MovieDetail = () => {
             />
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <span>{likesData?.likes || 0}</span>
+              <Tooltip title={isFavorite ? 'Убрать лайк' : 'Добавить лайк'}>
               <IconButton
                 onClick={handleLike}
                 disabled={isAuthenticated && likesData?.userReaction === true}
               >
                 <ThumbUpIcon sx={{ color: likesData?.userReaction === true ? '#4f9c60' : 'inherit' }} />
               </IconButton>
+              </Tooltip>
               <span>{likesData?.dislikes || 0}</span>
+              <Tooltip title={isFavorite ? 'Убрать дизлайк' : 'Добавить дизлайк'}>
               <IconButton
                 onClick={handleDislike}
                 disabled={isAuthenticated && likesData?.userReaction === false}
               >
                 <ThumbDownIcon color={likesData?.userReaction === false ? 'error' : 'inherit'} />
               </IconButton>
+              </Tooltip>
+              <Tooltip title={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}>
+                <IconButton
+                  onClick={handleFavoriteToggle}
+                  disabled={isAddingFavorite || isRemovingFavorite}
+                  sx={{
+                    '&:hover': {
+                      transform: 'scale(1.2)',
+                      transition: 'transform 0.2s ease-in-out',
+                    },
+                  }}
+                >
+                  {isFavorite ? (
+                    <FavoriteIcon sx={{ color: '#ff0000' }} />
+                  ) : (
+                    <FavoriteBorderIcon />
+                  )}
+                </IconButton>
+              </Tooltip>
             </Box>
           </div>
           <div className="info-section">
@@ -232,7 +319,7 @@ const MovieDetail = () => {
         </div>
         <div className="player-placeholder">
           <div className="placeholder-content">
-            <VideoPlayer /> 
+            <VideoPlayer />
           </div>
         </div>
         <div className="sequels-section">

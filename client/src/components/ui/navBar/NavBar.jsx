@@ -59,7 +59,7 @@ const NavBar = () => {
   return (
     <React.Fragment>
       <HideOnScroll>
-        <AppBar position="fixed" sx={{ zIndex: 1300 }}>
+        <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
           <Toolbar sx={{ paddingLeft: { xs: 2, sm: 4 } }}>
             <IconButton
               color="inherit"
@@ -115,6 +115,9 @@ const NavBar = () => {
           '& .MuiDrawer-paper': {
             width: 250,
             boxSizing: 'border-box',
+            zIndex: (theme) => theme.zIndex.appBar,
+            mt: '64px', // Высота AppBar
+            height: 'calc(100vh - 64px)',
           }
         }}
       >
