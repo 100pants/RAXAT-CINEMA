@@ -39,8 +39,16 @@ import BearCarousel from 'bear-react-carousel';
 import VideoPlayer from '../../../videoPlayer/VideoPlayer';
 import { ColorModeContext } from '../../../context/ToggleColorMode';
 import { useSelector } from 'react-redux';
+import { motion } from 'framer-motion';
 
 const MovieDetail = () => {
+
+  const pageVariants = {
+    initial: { opacity: 0, x: -100 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: 100 }
+  };
+
   const { id } = useParams();
   const navigate = useNavigate();
   const { mode } = useContext(ColorModeContext);
@@ -175,14 +183,32 @@ const MovieDetail = () => {
 
   return (
     <>
-      <Button
-        startIcon={<ArrowBack />}
-        onClick={() => navigate(-1)}
-        className="back-button"
-        variant="outlined"
-      >
-        Назад
-      </Button>
+    <motion.div
+  initial="initial"
+  animate="animate"
+  exit="exit"
+  variants={pageVariants}
+  transition={{ duration: 0.5 }}
+  className={`movie-detail-container ${mode}`}
+>
+
+<Button
+  startIcon={<ArrowBack />}
+  onClick={() => navigate(-1)}
+  variant="outlined"
+  sx={{
+    minHeight: '32px', 
+    padding: '4px 12px', 
+    fontSize: '0.8125rem', 
+    lineHeight: 1.5, 
+    '& .MuiButton-startIcon': {
+      marginRight: '4px', 
+      marginLeft: '-2px'
+    }
+  }}
+>
+  Назад
+</Button>
       <div className={`movie-detail-container ${mode}`}>
         <div className="movie-main-content">
           <div className="poster-section">
@@ -357,6 +383,7 @@ const MovieDetail = () => {
         onClose={handleSnackbarClose}
         message={snackbarMessage}
       />
+      </motion.div>
     </>
   );
 };

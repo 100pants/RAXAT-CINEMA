@@ -92,6 +92,14 @@ const NavBar = () => {
               </Box>
 
               {isAuthenticated ? (
+                <Button color="inherit" onClick={() => navigate('/favorites')}>
+                  Избранное
+                </Button>
+              ) : (
+               null
+              )}
+
+              {isAuthenticated ? (
                 <Button color="inherit" onClick={handleLogout}>
                   Выйти
                 </Button>
@@ -116,7 +124,7 @@ const NavBar = () => {
             width: 250,
             boxSizing: 'border-box',
             zIndex: (theme) => theme.zIndex.appBar,
-            mt: '64px', // Высота AppBar
+            mt: '64px',
             height: 'calc(100vh - 64px)',
           }
         }}

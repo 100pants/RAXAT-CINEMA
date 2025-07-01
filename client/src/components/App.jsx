@@ -7,6 +7,7 @@ import { MOVIE_LISTS, TOP_LISTS } from '../constants';
 import MoviesListTop from './pages/moviesListTop/MoviesListTop';
 import MoviesListMain from './pages/moviesListMain/MoviesListMain';
 import AuthPage from './pages/authPage/AuthPage';
+import FavoritePage from './pages/favoritePage/FavoritePage';
 
 function App() {
   const router = createBrowserRouter([
@@ -41,6 +42,10 @@ function App() {
         {
           path: '/login',
           element: <AuthPage isLogin={true} />,
+        },
+        {
+          path: '/favorites',
+          element: <FavoritePage isLogin={true} />,
         },
       ],
     },
